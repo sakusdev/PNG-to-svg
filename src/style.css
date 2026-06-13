@@ -7,24 +7,51 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
+html, body, #app { width: 100%; min-height: 100%; }
+body { margin: 0; min-width: 320px; min-height: 100vh; overflow: hidden; }
 button, input { font: inherit; }
 button { cursor: pointer; }
+[hidden] { display: none !important; }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr;
 }
 
 header {
-  padding: 18px 22px;
+  padding: 14px 18px;
   border-bottom: 1px solid #26304d;
   background: #11182c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
 }
 
 h1 { margin: 0 0 4px; font-size: 20px; }
 .sub { color: #aeb8d4; font-size: 13px; }
+
+.mode-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #2c3857;
+  border-radius: 12px;
+  background: #0a1020;
+}
+
+button.tab {
+  border: 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: #9da9c9;
+}
+
+button.tab.active {
+  color: #fff;
+  background: #3658d4;
+}
 
 main {
   display: grid;
@@ -60,6 +87,7 @@ input[type="number"] {
 }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.viewer-actions { margin-bottom: 12px; }
 button {
   border: 1px solid #415078;
   border-radius: 9px;
@@ -70,6 +98,21 @@ button {
 }
 button.primary { background: #3658d4; border-color: #5573ea; }
 button:disabled { opacity: .45; cursor: not-allowed; }
+button.wide { width: 100%; margin-top: 10px; }
+
+.zoom-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.zoom-row span {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #cbd4ef;
+}
 
 .stats {
   margin-top: 18px;
@@ -80,6 +123,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   font-size: 12px;
   line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .viewer {
@@ -90,7 +134,9 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 
 .toolbar {
+  min-width: 0;
   display: flex;
+  justify-content: space-between;
   gap: 10px;
   align-items: center;
   padding: 10px 14px;
@@ -100,12 +146,21 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   color: #aeb8d4;
 }
 
+.toolbar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .canvas-wrap {
   position: relative;
   overflow: auto;
   display: grid;
   place-items: center;
+  min-width: 0;
+  min-height: 0;
   padding: 20px;
+  background-color: #0b1020;
   background-image:
     linear-gradient(45deg, #151d31 25%, transparent 25%),
     linear-gradient(-45deg, #151d31 25%, transparent 25%),
@@ -115,7 +170,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   background-position: 0 0, 0 12px, 12px -12px, -12px 0;
 }
 
-canvas {
+.canvas-wrap.interactive {
+  display: block;
+  overflow: hidden;
+  padding: 0;
+}
+
+#canvas {
   max-width: 100%;
   max-height: calc(100vh - 150px);
   image-rendering: auto;
@@ -123,11 +184,35 @@ canvas {
   background: transparent;
 }
 
+#viewerCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  box-shadow: none;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+#viewerCanvas:active { cursor: grabbing; }
+
 .note { color: #f6c86d; font-size: 12px; line-height: 1.5; }
 .progress { margin-top: 10px; height: 8px; overflow: hidden; border-radius: 999px; background: #202a45; }
 .progress > div { height: 100%; width: 0%; background: #6f8cff; transition: width .15s ease; }
 
 @media (max-width: 850px) {
-  main { grid-template-columns: 1fr; }
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100vh; }
+  header { align-items: stretch; flex-direction: column; }
+  .mode-tabs { width: 100%; }
+  button.tab { flex: 1; }
+  main { grid-template-columns: 1fr; grid-template-rows: auto minmax(58vh, 1fr); }
   .controls { border-right: 0; border-bottom: 1px solid #26304d; }
+  .viewer { min-height: 58vh; }
+  .canvas-wrap { min-height: 52vh; }
+  #canvas { max-height: 52vh; }
+  #viewerHint { display: none; }
 }
