@@ -13,7 +13,7 @@ function runtimeFixesPlugin(): Plugin {
         let next = code.replace(bitmapTarget, "const bitmap = await decodeSvgBlob(blob);");
         next = next.replace(
           transparentField,
-          `${transparentField}\n\n        <div class="field">\n          <label><input id="denoise" type="checkbox" checked /> ノイズ除去を有効化</label>\n        </div>`
+          `<div class="field">\n          <label><input id="transparent" type="checkbox" checked disabled /> 透明部分を背景色で塗りつぶす</label>\n        </div>\n\n        <div class="field">\n          <label><input id="denoise" type="checkbox" checked /> ノイズ除去を有効化</label>\n        </div>`
         );
         next = next.replace(
           zoomRow,
@@ -33,11 +33,11 @@ function runtimeFixesPlugin(): Plugin {
         );
         next = next.replace(
           'ignoreTransparent: transparent.checked\n  }, [copy.buffer]);',
-          'ignoreTransparent: transparent.checked,\n    enableDenoise: denoise.checked\n  }, [copy.buffer]);'
+          'ignoreTransparent: false,\n    enableDenoise: denoise.checked\n  }, [copy.buffer]);'
         );
         next = next.replace(
           'transparent.disabled = busy;',
-          'transparent.disabled = busy;\n  denoise.disabled = busy;'
+          'transparent.disabled = true;\n  denoise.disabled = busy;'
         );
         next = next.replace(
           `svgFileInput.addEventListener("change", async () => {\n  const file = svgFileInput.files?.[0];\n  if (!file) return;\n  await loadSvgBlob(file, file.name);\n});`,
@@ -87,7 +87,7 @@ function runtimeFixesPlugin(): Plugin {
         );
         next = next.replace(
           'postProgress(0.03, "メディアンフィルタでノイズ除去中");\n  const input = median3x3(data.pixels, width, height);',
-          'const lowResInput = width * height <= 256 * 256;\n  const veryLowResInput = width * height <= 96 * 96;\n  postProgress(0.03, enableDenoise && !veryLowResInput ? "メディアンフィルタでノイズ除去中" : "前処理中");\n  const input = enableDenoise && !veryLowResInput ? median3x3(data.pixels, width, height) : data.pixels;'
+          'const lowResInput = width * height <= 256 * 256;\n  const veryLowResInput = width * height <= 96 * 96;\n  const opaqueInput = flattenTransparency(data.pixels, width, height);\n  postProgress(0.03, enableDenoise && !veryLowResInput ? "背景合成とノイズ除去中" : "透明部分を背景色で塗りつぶし中");\n  const input = enableDenoise && !veryLowResInput ? median3x3(opaqueInput, width, height) : opaqueInput;'
         );
         next = next.replace(target, replacement);
         next = next.replace(
@@ -100,7 +100,7 @@ function runtimeFixesPlugin(): Plugin {
         );
 
         return {
-          code: `import { adaptiveMinimumArea, majorityDespeckle } from "./despeckle";\n${next}`,
+          code: `import { adaptiveMinimumArea, majorityDespeckle } from "./despeckle";\nimport { flattenTransparency } from "./opaqueBackground";\n${next}`,
           map: null
         };
       }
