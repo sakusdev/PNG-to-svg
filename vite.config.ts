@@ -37,15 +37,21 @@ function runtimeFixesPlugin(): Plugin {
         const target = `postProgress(0.34, "小さな孤立領域を除去中");\n  removeSmallRegions(keys, width, height, 6);`;
         if (!code.includes(target)) return null;
 
-        const replacement = `if (enableDenoise) {
+        const replacement = `const lowRes = pixelCount <= 256 * 256;
+  const veryLowRes = pixelCount <= 96 * 96;
+
+  if (enableDenoise) {
     postProgress(0.30, "局所多数決で点ノイズを除去中");
-    majorityDespeckle(keys, width, height, 2);
+    majorityDespeckle(keys, width, height, lowRes ? 1 : 2);
 
     const minRegionArea = adaptiveMinimumArea(width, height, maxColors);
     postProgress(0.35, \`孤立領域を除去中（\${minRegionArea}px未満）\`);
     removeSmallRegions(keys, width, height, minRegionArea);
-    majorityDespeckle(keys, width, height, 1);
-    removeSmallRegions(keys, width, height, Math.max(8, Math.round(minRegionArea * 0.65)));
+
+    if (!lowRes) {
+      majorityDespeckle(keys, width, height, 1);
+      removeSmallRegions(keys, width, height, Math.max(2, Math.round(minRegionArea * 0.65)));
+    }
   } else {
     postProgress(0.35, "ノイズ除去をスキップ");
   }`;
@@ -60,16 +66,16 @@ function runtimeFixesPlugin(): Plugin {
         );
         next = next.replace(
           'postProgress(0.03, "メディアンフィルタでノイズ除去中");\n  const input = median3x3(data.pixels, width, height);',
-          'postProgress(0.03, enableDenoise ? "メディアンフィルタでノイズ除去中" : "前処理中");\n  const input = enableDenoise ? median3x3(data.pixels, width, height) : data.pixels;'
+          'const lowResInput = width * height <= 256 * 256;\n  const veryLowResInput = width * height <= 96 * 96;\n  postProgress(0.03, enableDenoise && !veryLowResInput ? "メディアンフィルタでノイズ除去中" : "前処理中");\n  const input = enableDenoise && !veryLowResInput ? median3x3(data.pixels, width, height) : data.pixels;'
         );
         next = next.replace(target, replacement);
         next = next.replace(
           'if (loop.length < 4) continue;',
-          'if (loop.length < (enableDenoise ? 6 : 4)) continue;'
+          'if (loop.length < (lowRes ? 4 : enableDenoise ? 6 : 4)) continue;'
         );
         next = next.replace(
           'const smoothed = simplify(chaikin(loop, 2), 0.18);',
-          'const smoothed = enableDenoise\n        ? simplify(chaikin(loop, 2), 0.28)\n        : simplify(chaikin(loop, 1), 0.12);'
+          'const smoothed = enableDenoise\n        ? lowRes\n          ? simplify(chaikin(loop, 1), 0.10)\n          : simplify(chaikin(loop, 2), 0.28)\n        : lowRes\n          ? simplify(loop, 0.06)\n          : simplify(chaikin(loop, 1), 0.12);'
         );
 
         return {
