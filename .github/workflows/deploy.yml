@@ -29,11 +29,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --verbose
+        timeout-minutes: 10
 
       - name: Build
-        run: npm run build --verbose
-        timeout-minutes: 10
+        run: npm run build 
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
