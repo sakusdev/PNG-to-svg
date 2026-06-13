@@ -44,7 +44,25 @@ export function adaptiveMinimumArea(
   height: number,
   maxColors: number
 ): number {
-  const megapixelScale = Math.sqrt((width * height) / 1_000_000);
+  const pixelCount = width * height;
   const colorPressure = Math.max(1, Math.log10(Math.max(10, maxColors)) / 3);
-  return Math.max(12, Math.min(96, Math.round(18 * megapixelScale * colorPressure)));
+
+  if (pixelCount <= 64 * 64) {
+    return Math.max(1, Math.min(3, Math.round(1.25 * colorPressure)));
+  }
+
+  if (pixelCount <= 128 * 128) {
+    return Math.max(1, Math.min(5, Math.round(2 * colorPressure)));
+  }
+
+  if (pixelCount <= 256 * 256) {
+    return Math.max(2, Math.min(8, Math.round(3 * colorPressure)));
+  }
+
+  if (pixelCount <= 512 * 512) {
+    return Math.max(4, Math.min(16, Math.round(6 * colorPressure)));
+  }
+
+  const megapixelScale = Math.sqrt(pixelCount / 1_000_000);
+  return Math.max(8, Math.min(96, Math.round(18 * megapixelScale * colorPressure)));
 }
